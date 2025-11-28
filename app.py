@@ -26,6 +26,12 @@ from utils.maps import generate_maps_url
 app = Flask(__name__)
 
 # LINE Bot API 設定
+print(f"=== 環境變數檢查 ===")
+print(f"LINE_CHANNEL_ACCESS_TOKEN 長度: {len(LINE_CHANNEL_ACCESS_TOKEN) if LINE_CHANNEL_ACCESS_TOKEN else 'None'}")
+print(f"LINE_CHANNEL_ACCESS_TOKEN 前10碼: {LINE_CHANNEL_ACCESS_TOKEN[:10] if LINE_CHANNEL_ACCESS_TOKEN else 'None'}")
+print(f"LINE_CHANNEL_SECRET 長度: {len(LINE_CHANNEL_SECRET) if LINE_CHANNEL_SECRET else 'None'}")
+print(f"GEMINI_API_KEY 長度: {len(GEMINI_API_KEY) if GEMINI_API_KEY else 'None'}")
+
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
