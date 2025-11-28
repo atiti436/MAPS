@@ -36,18 +36,25 @@ def webhook():
 
     # 取得 request body
     body = request.get_data(as_text=True)
+    print(f"收到 webhook 請求，body: {body[:200]}...")  # 只印前 200 字元
 
     # 處理 webhook
     try:
         handler.handle(body, signature)
-    except InvalidSignatureError:
+    except InvalidSignatureError as e:
+        print(f"簽名驗證失敗: {e}")
         abort(400)
+    except Exception as e:
+        print(f"處理 webhook 錯誤: {e}")
+        import traceback
+        traceback.print_exc()
 
     return 'OK'
 
 @handler.add(MessageEvent, message=ImageMessageContent)
 def handle_image_message(event):
     """處理圖片訊息"""
+    print("=== 觸發圖片訊息處理器 ===")
     try:
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
@@ -62,11 +69,16 @@ def handle_image_message(event):
 
             # 下載圖片
             message_id = event.message.id
-            message_content = line_bot_api.get_message_content(message_id)
-            image_data = message_content
+            print(f"開始下載圖片，message_id: {message_id}")
+
+            # LINE Bot SDK v3 的 get_message_content 回傳 bytes
+            image_data = line_bot_api.get_message_content(message_id)
+            print(f"圖片下載完成，大小: {len(image_data)} bytes")
 
             # 辨識店家資訊
+            print("開始辨識店家資訊...")
             result = recognize_restaurant(image_data)
+            print(f"辨識結果: {result}")
 
             # 驗證結果
             if validate_result(result):
@@ -165,6 +177,7 @@ def handle_image_message(event):
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
     """處理文字訊息"""
+    print("=== 觸發文字訊息處理器 ===")
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
         line_bot_api.reply_message(
