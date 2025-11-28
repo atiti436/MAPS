@@ -5,9 +5,9 @@ from config import GEMINI_API_KEY
 from PIL import Image
 import io
 
-# 初始化 Gemini 1.5 Flash 模型（快速且便宜）
+# 初始化 Gemini 2.5 Pro 模型
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-pro')
 
 def recognize_restaurant(image_data):
     """

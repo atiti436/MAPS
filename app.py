@@ -5,6 +5,7 @@ from linebot.v3.messaging import (
     Configuration,
     ApiClient,
     MessagingApi,
+    MessagingApiBlob,
     ReplyMessageRequest,
     PushMessageRequest,
     TextMessage,
@@ -67,12 +68,13 @@ def handle_image_message(event):
                 )
             )
 
-            # 下載圖片
+            # 下載圖片（使用 MessagingApiBlob）
             message_id = event.message.id
             print(f"開始下載圖片，message_id: {message_id}")
 
-            # LINE Bot SDK v3 的 get_message_content 回傳 bytes
-            image_data = line_bot_api.get_message_content(message_id)
+            # LINE Bot SDK v3 使用 MessagingApiBlob 下載圖片
+            blob_api = MessagingApiBlob(api_client)
+            image_data = blob_api.get_message_content(message_id)
             print(f"圖片下載完成，大小: {len(image_data)} bytes")
 
             # 辨識店家資訊
