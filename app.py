@@ -18,7 +18,7 @@ from linebot.v3.webhooks import (
     ImageMessageContent
 )
 import requests
-from config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN
+from config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, GEMINI_API_KEY
 from utils.gemini import recognize_restaurant
 from utils.validator import validate_result
 from utils.maps import generate_maps_url
