@@ -6,13 +6,16 @@ def generate_maps_url(name, address):
 
     參數:
         name: str - 店家名稱
-        address: str - 店家地址
+        address: str - 店家地址（可為 "unknown"）
 
     回傳:
         str: Google Maps 搜尋 URL
     """
-    # 組合查詢字串
-    query = f"{name} {address}"
+    # 組合查詢字串（如果沒有地址，就只搜尋店名）
+    if address and address != 'unknown' and address.strip():
+        query = f"{name} {address}"
+    else:
+        query = name
 
     # URL encode
     encoded_query = quote(query)

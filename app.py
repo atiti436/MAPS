@@ -92,10 +92,47 @@ def handle_image_message(event):
             if validate_result(result):
                 # 辨識成功
                 name = result['name']
-                address = result['address']
+                address = result.get('address', 'unknown')
 
                 # 生成 Google Maps URL
                 maps_url = generate_maps_url(name, address)
+
+                # 建立卡片內容
+                card_contents = [
+                    {
+                        "type": "text",
+                        "text": "🏪 找到店家！",
+                        "weight": "bold",
+                        "size": "md",
+                        "color": "#1DB446"
+                    },
+                    {
+                        "type": "text",
+                        "text": name,
+                        "weight": "bold",
+                        "size": "xl",
+                        "margin": "md"
+                    }
+                ]
+
+                # 如果有地址，才顯示地址
+                if address and address != 'unknown' and address.strip():
+                    card_contents.append({
+                        "type": "text",
+                        "text": address,
+                        "size": "sm",
+                        "color": "#999999",
+                        "margin": "md",
+                        "wrap": True
+                    })
+                else:
+                    card_contents.append({
+                        "type": "text",
+                        "text": "📍 地址未提供",
+                        "size": "sm",
+                        "color": "#AAAAAA",
+                        "margin": "md"
+                    })
 
                 # 建立 Flex Message 卡片
                 flex_message_json = {
@@ -103,30 +140,7 @@ def handle_image_message(event):
                     "body": {
                         "type": "box",
                         "layout": "vertical",
-                        "contents": [
-                            {
-                                "type": "text",
-                                "text": "🏪 找到店家！",
-                                "weight": "bold",
-                                "size": "md",
-                                "color": "#1DB446"
-                            },
-                            {
-                                "type": "text",
-                                "text": name,
-                                "weight": "bold",
-                                "size": "xl",
-                                "margin": "md"
-                            },
-                            {
-                                "type": "text",
-                                "text": address,
-                                "size": "sm",
-                                "color": "#999999",
-                                "margin": "md",
-                                "wrap": True
-                            }
-                        ]
+                        "contents": card_contents
                     },
                     "footer": {
                         "type": "box",
