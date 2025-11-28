@@ -91,78 +91,109 @@ def handle_image_message(event):
 
             # 驗證結果
             if validate_result(result):
-                # 辨識成功
-                name = result['name']
-                address = result.get('address', 'unknown')
+                # 判斷是單個還是多個店家
+                restaurants = result.get('restaurants', [])
+                count = result.get('count', 0)
 
-                # 生成 Google Maps URL
-                maps_url = generate_maps_url(name, address)
+                # 如果是舊格式（向後相容）
+                if not restaurants and 'name' in result:
+                    restaurants = [{
+                        'name': result['name'],
+                        'address': result.get('address', 'unknown')
+                    }]
+                    count = 1
 
-                # 建立卡片內容
-                card_contents = [
-                    {
-                        "type": "text",
-                        "text": "🏪 找到店家！",
-                        "weight": "bold",
-                        "size": "md",
-                        "color": "#1DB446"
-                    },
-                    {
-                        "type": "text",
-                        "text": name,
-                        "weight": "bold",
-                        "size": "xl",
-                        "margin": "md"
-                    }
-                ]
+                print(f"辨識到 {count} 個店家")
 
-                # 如果有地址，才顯示地址
-                if address and address != 'unknown' and address.strip():
-                    card_contents.append({
-                        "type": "text",
-                        "text": address,
-                        "size": "sm",
-                        "color": "#999999",
-                        "margin": "md",
-                        "wrap": True
-                    })
-                else:
-                    card_contents.append({
-                        "type": "text",
-                        "text": "📍 地址未提供",
-                        "size": "sm",
-                        "color": "#AAAAAA",
-                        "margin": "md"
-                    })
+                # 建立卡片
+                bubbles = []
+                for idx, restaurant in enumerate(restaurants[:10]):  # 最多 10 個
+                    name = restaurant.get('name', 'unknown')
+                    address = restaurant.get('address', 'unknown')
 
-                # 建立 Flex Message 卡片
-                flex_message_json = {
-                    "type": "bubble",
-                    "body": {
-                        "type": "box",
-                        "layout": "vertical",
-                        "contents": card_contents
-                    },
-                    "footer": {
-                        "type": "box",
-                        "layout": "vertical",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "color": "#1DB446",
-                                "action": {
-                                    "type": "uri",
-                                    "label": "🗺️ 開啟地圖",
-                                    "uri": maps_url
+                    # 生成 Google Maps URL
+                    maps_url = generate_maps_url(name, address)
+
+                    # 建立卡片內容
+                    card_contents = [
+                        {
+                            "type": "text",
+                            "text": f"🏪 店家 {idx + 1}/{count}" if count > 1 else "🏪 找到店家！",
+                            "weight": "bold",
+                            "size": "md",
+                            "color": "#1DB446"
+                        },
+                        {
+                            "type": "text",
+                            "text": name,
+                            "weight": "bold",
+                            "size": "xl",
+                            "margin": "md",
+                            "wrap": True
+                        }
+                    ]
+
+                    # 如果有地址，才顯示地址
+                    if address and address != 'unknown' and address.strip():
+                        card_contents.append({
+                            "type": "text",
+                            "text": address,
+                            "size": "sm",
+                            "color": "#999999",
+                            "margin": "md",
+                            "wrap": True
+                        })
+                    else:
+                        card_contents.append({
+                            "type": "text",
+                            "text": "📍 地址未提供",
+                            "size": "sm",
+                            "color": "#AAAAAA",
+                            "margin": "md"
+                        })
+
+                    # 建立單張卡片
+                    bubble = {
+                        "type": "bubble",
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": card_contents
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "color": "#1DB446",
+                                    "action": {
+                                        "type": "uri",
+                                        "label": "🗺️ 開啟地圖",
+                                        "uri": maps_url
+                                    }
                                 }
-                            }
-                        ]
+                            ]
+                        }
                     }
-                }
+                    bubbles.append(bubble)
+
+                # 根據店家數量決定訊息類型
+                if count == 1:
+                    # 單個店家：單張卡片
+                    flex_message_json = bubbles[0]
+                    alt_text = f"{restaurants[0]['name']}"
+                else:
+                    # 多個店家：Carousel 輪播
+                    flex_message_json = {
+                        "type": "carousel",
+                        "contents": bubbles
+                    }
+                    alt_text = f"找到 {count} 家店，滑動查看"
 
                 flex_message = FlexMessage(
-                    alt_text=f'{name} - {address}',
+                    alt_text=alt_text,
                     contents=FlexContainer.from_dict(flex_message_json)
                 )
 

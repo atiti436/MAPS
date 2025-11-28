@@ -2,15 +2,21 @@ def validate_result(result):
     """
     驗證辨識結果是否有效
 
-    新邏輯：只要有店名就算成功，地址是可選的
+    支援新舊兩種格式：
+    - 舊格式: {name: str, address: str}
+    - 新格式: {restaurants: [...], count: int}
 
     參數:
-        result: dict - 包含 name 和 address 的辨識結果
+        result: dict - 辨識結果
 
     回傳:
         bool: 是否為有效結果
     """
-    # 檢查是否包含必要欄位
+    # 新格式：檢查是否有店家
+    if 'restaurants' in result:
+        return result.get('count', 0) > 0
+
+    # 舊格式（向後相容）
     if 'name' not in result:
         return False
 
