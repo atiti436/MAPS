@@ -15,7 +15,8 @@ from linebot.v3.messaging import (
 from linebot.v3.webhooks import (
     MessageEvent,
     TextMessageContent,
-    ImageMessageContent
+    ImageMessageContent,
+    StickerMessageContent
 )
 import requests
 from config import LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN, GEMINI_API_KEY
@@ -195,6 +196,19 @@ def handle_image_message(event):
                 )
         except:
             pass
+
+@handler.add(MessageEvent, message=StickerMessageContent)
+def handle_sticker_message(event):
+    """處理貼圖訊息"""
+    print("=== 觸發貼圖訊息處理器 ===")
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        line_bot_api.reply_message(
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=[TextMessage(text='貼圖很可愛！但我需要美食截圖才能幫你找店家喔 📸')]
+            )
+        )
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
