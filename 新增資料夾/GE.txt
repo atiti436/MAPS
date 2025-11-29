@@ -1,0 +1,61 @@
+這真的是**「大型翻車現場」**，但翻得非常有價值！啾啾，這簡直是 AI 幻覺的教科書案例。
+
+我們來看看這第三次的 Log 發生了什麼事（這是 AI 偷吃步被抓包的證據）：
+
+🕵️‍♀️ 寶寶驗屍報告：為什麼會分裂成 3 家店？
+你給它一張圖，它吐出 3 家店，而且地址全是「真的」（但不在圖片裡）：
+
+NO.5 CAFE @ 甘肅二街5號 ➡️ 這是真的地址（在中壢）。
+
+Minimalism Cafe @ 新富一街203號 ➡️ 這是真的地址（在平鎮，而且那家店真的叫 Minimalism cafe）。
+
+No.5 CheeseCake @ 板橋車站B1 ➡️ 這是真的地址（在那邊真的有一家起司蛋糕櫃位）。
+
+這代表什麼？ Gemini 「作弊」了！它沒有遵守我們說的「只看圖片 (OCR Only)」。 它認出了 no5ca_fe ➡️ 聯想到 No.5 ➡️ 然後啟動了它龐大的「訓練資料庫 (World Knowledge)」，把它記憶中所有跟「No.5」或是「風格很像 (Minimalism)」的店家資料全挖出來給你。這叫做 「知識洩漏 (Knowledge Leakage)」。雖然它很熱心想幫你補全地址，但在這個專案裡，這是錯誤行為（因為我們只要針對這張圖）。
+
+🛑 怎麼修？（Prompt 的最後一塊拼圖）
+我們必須給 Gemini 下一道**「禁錮咒」**，禁止它使用外部知識。
+
+請將以下這段 「Anti-Hallucination & Grounding Rules (反幻覺與接地規則)」 強制加入 Prompt 的最上方或 Extraction Rules 區塊中：
+# CRITICAL: Grounding Rules (絕對遵守)
+1. **Source of Truth is ONLY the Input:** - 你只能提取圖片(Image)與文字(Caption)中**「明確出現」**的資訊。
+   - **嚴禁使用外部知識 (No External Knowledge):** 即使你知道 "No.5 Cafe" 的真實地址在 "甘肅二街"，但如果圖片/文字沒寫，你必須填寫 `address: "unknown"`。
+   - **禁止補全地址:** 不要在地址欄位自行填入 Google Maps 的資料。
+
+2. **Single Post Assumption:**
+   - 除非圖片明顯是「多店家清單 (Listicle)」(有編號 1. 2. 3. 或不同店名並列)，否則預設這是一篇「單一店家」的貼文。
+   - 若只看到一個蛋糕和一個帳號，`restaurants` 陣列中只能有 **1 個** 物件。
+   - **禁止分裂:** 不要因為不確定，就列出所有可能的候選店家 (e.g., 不要同時列出 No.5 Cafe 和 Minimalism Cafe)。
+
+3. **Hallucination Check:**
+   - 若 `name` 是根據風格猜測的 (e.g., "Minimalism Cafe") 且圖片中無此文字，直接丟棄該結果。
+🧪 為什麼那個 "Minimalism Cafe" 會跑出來？
+這是一個很好笑的誤判：
+
+Log 顯示： address: '新富一街203號'
+
+現實世界： 平鎮真的有一家店叫 Minimalism cafe（簡約 咖啡），地址就在新富一街。
+
+AI 的腦補過程：
+
+圖片是巴斯克蛋糕（風格很簡約）。
+
+帳號 no5ca_fe 讓它聯想到 No.5。
+
+它的大數據裡，這兩家店可能常常被放在一起討論（桃園咖啡廳），或者它覺得風格太像了，直接把別家店的資料錯置進來。
+
+🚀 修正後的預期
+加上上面的**「接地規則 (Grounding Rules)」**後，它就不敢亂抓資料庫裡的地址了。
+
+修正後的輸出應該會變回：
+{
+  "restaurants": [
+    {
+      "name": "No.5 Cafe",
+      "original_handle": "no5ca_fe",
+      "address": "unknown" 
+    }
+  ],
+  "count": 1,
+  "food_keywords": "巴斯克 蛋糕 甜點"
+}
