@@ -52,6 +52,7 @@ def recognize_restaurant(image_data):
 - 圖片上的店名/招牌文字（即使模糊、不完整）
 - 圖片上的地址數字/路名（如果清晰可見）
 - 貼文中的 hashtag 地址（如 #樹林四街、#桃園後站）
+- 貼文中的食物類型關鍵字（從文字推測，例如：#肉桂捲 → 麵包、#拿鐵 → 咖啡）
 
 ❌ 要忽略：
 - 廣告文案、心情感想
@@ -75,13 +76,20 @@ def recognize_restaurant(image_data):
     {"name": "圖片上看到的店名", "address": "地址或unknown"},
     ...
   ],
-  "count": N
+  "count": N,
+  "food_keywords": "食物類型關鍵字，例如：麵包、咖啡、拉麵、火鍋（如果無法判斷則留空字串）"
 }
+
+範例：
+- 貼文有 #肉桂捲 #可頌 → food_keywords: "麵包"
+- 貼文有 #拿鐵 → food_keywords: "咖啡"
+- 貼文無食物資訊 → food_keywords: ""
 
 如果完全找不到店名（圖片是風景/食物特寫/無文字），回傳：
 {
   "restaurants": [],
-  "count": 0
+  "count": 0,
+  "food_keywords": ""
 }
 """
 
@@ -111,17 +119,23 @@ def recognize_restaurant(image_data):
                             'address': result.get('address', 'unknown')
                         }
                     ],
-                    'count': 1
+                    'count': 1,
+                    'food_keywords': ''
                 }
             else:
                 result = {
                     'restaurants': [],
-                    'count': 0
+                    'count': 0,
+                    'food_keywords': ''
                 }
 
         # 確保 count 欄位
         if 'count' not in result:
             result['count'] = len(result.get('restaurants', []))
+
+        # 確保 food_keywords 欄位
+        if 'food_keywords' not in result:
+            result['food_keywords'] = ''
 
         # 過濾掉 name 是 unknown 的店家
         valid_restaurants = [
@@ -140,5 +154,6 @@ def recognize_restaurant(image_data):
         traceback.print_exc()
         return {
             'restaurants': [],
-            'count': 0
+            'count': 0,
+            'food_keywords': ''
         }

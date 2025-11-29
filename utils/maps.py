@@ -1,21 +1,29 @@
 from urllib.parse import quote
 
-def generate_maps_url(name, address):
+def generate_maps_url(name, address, keywords=''):
     """
     生成 Google Maps 搜尋連結
 
     參數:
         name: str - 店家名稱
         address: str - 店家地址（可為 "unknown"）
+        keywords: str - 食物類型關鍵字（可選，例如：麵包、咖啡）
 
     回傳:
         str: Google Maps 搜尋 URL
     """
-    # 組合查詢字串（如果沒有地址，就只搜尋店名）
+    # 組合查詢字串
+    query_parts = [name]
+
+    # 加入地址（如果有）
     if address and address != 'unknown' and address.strip():
-        query = f"{name} {address}"
-    else:
-        query = name
+        query_parts.append(address)
+
+    # 加入食物關鍵字（如果有）
+    if keywords and keywords.strip():
+        query_parts.append(keywords)
+
+    query = ' '.join(query_parts)
 
     # URL encode
     encoded_query = quote(query)

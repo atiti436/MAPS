@@ -94,6 +94,7 @@ def handle_image_message(event):
                 # 判斷是單個還是多個店家
                 restaurants = result.get('restaurants', [])
                 count = result.get('count', 0)
+                food_keywords = result.get('food_keywords', '')
 
                 # 如果是舊格式（向後相容）
                 if not restaurants and 'name' in result:
@@ -104,6 +105,8 @@ def handle_image_message(event):
                     count = 1
 
                 print(f"辨識到 {count} 個店家")
+                if food_keywords:
+                    print(f"食物關鍵字: {food_keywords}")
 
                 # 建立卡片
                 bubbles = []
@@ -111,8 +114,8 @@ def handle_image_message(event):
                     name = restaurant.get('name', 'unknown')
                     address = restaurant.get('address', 'unknown')
 
-                    # 生成 Google Maps URL
-                    maps_url = generate_maps_url(name, address)
+                    # 生成 Google Maps URL（加入食物關鍵字提高搜尋精確度）
+                    maps_url = generate_maps_url(name, address, food_keywords)
 
                     # 建立卡片內容
                     card_contents = [
