@@ -113,9 +113,10 @@ def handle_image_message(event):
                 for idx, restaurant in enumerate(restaurants[:10]):  # 最多 10 個
                     name = restaurant.get('name', 'unknown')
                     address = restaurant.get('address', 'unknown')
+                    original_handle = restaurant.get('original_handle', '')
 
-                    # 生成 Google Maps URL（加入食物關鍵字提高搜尋精確度）
-                    maps_url = generate_maps_url(name, address, food_keywords)
+                    # 生成 Google Maps URL（加入原始帳號 + 食物關鍵字提高搜尋精確度）
+                    maps_url = generate_maps_url(name, address, food_keywords, original_handle)
 
                     # 建立卡片內容
                     card_contents = [

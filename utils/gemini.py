@@ -36,16 +36,37 @@ def recognize_restaurant(image_data):
 
 # Extraction Logic
 
-## 1. Shop Name (店名)
-**優先級（由高到低）：**
-1. 圖片中的招牌/Logo 文字（最優先，Source of Truth）
-2. 圖片中的 IG 帳號名（如果是社群媒體截圖且無實體招牌，提取頂部帳號名，例如：poffee_canteen）
-3. 貼文文字中的店名（最後選擇）
+## 1. Shop Name (店名 - 帳號權重策略)
+**來源優先級（由清晰度決定）：**
+1. **清晰的實體招牌** → 最優先
+2. **社群帳號（需身份驗證）** → 無招牌時的次選
+3. **貼文文字** → 最後選擇
 
-**規則：**
-- 若圖文衝突（圖片「喝碗雞湯」vs 貼文「來碗雞湯」）→ 強制以圖片為準
-- 看到什麼寫什麼：招牌只有 "Mountain" 就寫 "Mountain"，不要補全成 "Mountain Coffee"
+**社群帳號提取規則（僅當無實體招牌時）：**
+
+**身份驗證（判斷店家 vs 推薦者）：**
+- ❌ 拒絕提取：帳號包含 `foodie`, `blogger`, `eats`, `life`, `diary`, `travel` 等
+- ❌ 拒絕提取：貼文語氣是推薦（「推薦這家」「去吃了XXX」）
+- ✅ 可提取：帳號包含 `cafe`, `official`, `restaurant`, `store` 等
+- ✅ 可提取：貼文語氣是店主（「我們的店」「本店」）
+
+**帳號語意還原（Handle Processing）：**
+提取帳號後，執行以下清洗步驟：
+1. 移除後綴：`_official`, `_store`, `_tw`, `.tw` 等
+2. 移除年份：`2023`, `2024`, `2025` 等
+3. 特殊字元轉空格：`_` 和 `.` 改為空格
+4. 智能合併：`ca_fe` → `Cafe`, `hu_lu_lu` → `Hululu`
+5. Title Case：首字母大寫（例如：`poffee canteen` → `Poffee Canteen`）
+6. 保留數字：`no5` → `No.5`, `101` 保持原樣
+
+**衝突處理：**
+- 模糊招牌 + 清晰帳號 → 使用帳號（還原後的名稱）
+- 清晰招牌 + 帳號 → 使用招牌（`name`），保留帳號（`original_handle`）
+- 推薦清單 → 只提取清單中的店名，忽略推薦者帳號
+
+**多店家清單：**
 - 若圖片是推薦清單，提取所有列出的店名（最多 10 個）
+- 忽略頂部推薦者帳號
 
 ## 2. Address/Location (地址資訊)
 **目標：** 提供越詳細越好的地理資訊，提高 Google Maps 搜尋命中率。
@@ -83,13 +104,20 @@ def recognize_restaurant(image_data):
 {
   "restaurants": [
     {
-      "name": "店名（以圖片為準）",
+      "name": "店名（招牌文字 或 還原後的帳號名）",
+      "original_handle": "原始社群帳號（可選，僅當使用帳號時提供）",
       "address": "完整地址 或 區域+路名 或 unknown"
     }
   ],
   "count": 1,
   "food_keywords": "關鍵字1 關鍵字2"
 }
+
+**欄位說明：**
+- `name`: 主要顯示名稱（招牌優先，或還原後的帳號名）
+- `original_handle`: 原始社群帳號（例如：no5ca_fe）- 僅當使用帳號作為店名時提供
+- `address`: 地址資訊
+- `food_keywords`: 食物類型關鍵字
 
 # Examples
 
@@ -113,14 +141,24 @@ def recognize_restaurant(image_data):
   "food_keywords": "雞湯 滷肉飯"
 }
 
-## Example 3: 社群截圖，帳號名為店名
+## Example 3: 社群截圖，帳號語意還原
 **貼文：** "中壢車站走路約10分鐘，有甜有鹹"
-**圖片：** IG 截圖，帳號名 "poffee_canteen"，咖哩飯照片
+**圖片：** IG 截圖，帳號名 "poffee_canteen"，咖哩飯照片，無實體招牌
 **輸出：**
 {
-  "restaurants": [{"name": "poffee_canteen", "address": "中壢車站"}],
+  "restaurants": [{"name": "Poffee Canteen", "original_handle": "poffee_canteen", "address": "中壢車站"}],
   "count": 1,
   "food_keywords": "咖哩 簡餐"
+}
+
+## Example 3-2: 社群截圖，帳號語意還原（巴斯克案例）
+**貼文：** "柚香蜂蜜巴斯克他來了～這週的巴斯克口味..."
+**圖片：** IG 截圖，帳號名 "no5ca_fe"，巴斯克蛋糕照片，無實體招牌
+**輸出：**
+{
+  "restaurants": [{"name": "No.5 Cafe", "original_handle": "no5ca_fe", "address": "unknown"}],
+  "count": 1,
+  "food_keywords": "巴斯克 蛋糕 甜點"
 }
 
 ## Example 4: 多店家清單
